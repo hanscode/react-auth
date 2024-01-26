@@ -1,8 +1,8 @@
 import { useContext, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-import ThemeContext from '../context/ThemeContext';
 import UserContext from '../context/UserContext';
+import ThemeContext from '../context/ThemeContext';
 
 const UserSignIn = () => {
   const { actions } = useContext(UserContext);
@@ -10,25 +10,40 @@ const UserSignIn = () => {
   const navigate = useNavigate();
 
   // State
+  const name = useRef(null);
   const username = useRef(null);
   const password = useRef(null);
   const [errors, setErrors] = useState([]);
 
-  // Event Handlers
+  // event handlers
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const credentials = {
+    const user = {
+      name: name.current.value,
       username: username.current.value,
       password: password.current.value
-    };
+    }
+
+    const fetchOptions = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json; charset=utf-8"
+      },
+      body: JSON.stringify(user)
+    }
 
     try {
-      const user = await actions.signIn(credentials);
-      if (user) {
+      const response = await fetch("http://localhost:5000/api/users", fetchOptions);
+      if (response.status === 201) {
+        console.log(`${user.username} is successfully signed up and authenticated!`);
+        await actions.signIn(user);
         navigate("/authenticated");
+      } else if (response.status === 400) {
+        const data = await response.json();
+        setErrors(data.errors);
       } else {
-        setErrors(["Sign-in was unsuccessful"]);
+        throw new Error();
       }
     } catch (error) {
       console.log(error);
@@ -44,7 +59,7 @@ const UserSignIn = () => {
   return (
     <div className="bounds">
       <div className="grid-33 centered signin">
-        <h1>Sign in</h1>
+        <h1>Sign up</h1>
         <div>
           {errors.length ? (
             <div>
@@ -55,8 +70,14 @@ const UserSignIn = () => {
                 </ul>
               </div>
             </div>
-          ) : null }
+          ) : null}
           <form onSubmit={handleSubmit}>
+            <input
+              id="name"
+              name="name"
+              type="text"
+              ref={name}
+              placeholder="Name" />
             <input
               id="username"
               name="username"
@@ -70,13 +91,13 @@ const UserSignIn = () => {
               ref={password}
               placeholder="Password" />
             <div className="pad-bottom">
-              <button className="button" type="submit" style={{ background: accentColor }}>Sign in</button>
+              <button className="button" type="submit" style={{ background: accentColor }}>Sign up</button>
               <button className="button button-secondary" style={{ color: accentColor }} onClick={handleCancel}>Cancel</button>
             </div>
           </form>
         </div>
         <p>
-          Don't have a user account? <Link style={{ color: accentColor }} to="/signup">Click here</Link> to sign up!
+          Already have a user account? <Link style={{ color: accentColor }} to="/signin">Click here</Link> to sign in!
         </p>
       </div>
     </div>
